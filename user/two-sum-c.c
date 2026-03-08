@@ -2,47 +2,38 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-// returns the number of digits parsed
-int parse_one_number(const char *input_buf, int *num)
+int parse_two_numbers(char *input_buf, int *num1, int *num2)
 {
-    char temp[11]; // 10 digits + '\0'
+    // replace whitespace with '\0'
     int input_idx = 0;
-    int temp_idx = 0;
-    while (input_buf[input_idx] != ' ' && input_buf[input_idx] != '\0')
+    while (input_idx < strlen(input_buf) + 1)
     {
-        temp[temp_idx++] = input_buf[input_idx++];
-    }
-    temp[temp_idx] = '\0';
-    if (temp_idx == 0)
-    {
-        return -1;
+        if (input_buf[input_idx] == ' ')
+        {
+            if (input_idx == 0) {
+                // no first number encountered
+                return -1;
+            }
+            input_buf[input_idx] = '\0';
+            break;
+        }
+        if (input_idx == strlen(input_buf)) {
+            // no whitespace encountered
+            return -1;
+        }
+
+        ++input_idx;
     }
 
-    *num = atoi(temp);
+    *num1 = atoi(input_buf);
     // check if atoi resulted in error
-    if (*num == 0 && temp[0] != '0' && (temp[1] != '\0' || temp[1] != ' ')) {
+    if (*num1 == 0 && (input_buf[0] != '0' || input_buf[1] != '\0')) {
         return -1;
     }
 
-    return input_idx;
-}
-
-int parse_two_numbers(const char *input_buf, int *num1, int *num2)
-{
-    int input_idx = 0;
-
-    int first_number_parsing_result = parse_one_number(input_buf, num1);
-    if (first_number_parsing_result < 0)
-    {
-        return -1;
-    }
-
-    input_idx += first_number_parsing_result;
-    input_idx++; // skip whitespace
-
-    int second_number_parsing_result = parse_one_number(input_buf + input_idx, num2);
-    if (second_number_parsing_result < 0)
-    {
+    *num2 = atoi(input_buf + input_idx + 1);
+    // check if atoi resulted in error
+    if (*num2 == 0 && (input_buf[input_idx + 1] != '0' || input_buf[input_idx + 2] != '\0')) {
         return -1;
     }
 

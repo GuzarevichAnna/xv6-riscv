@@ -3,6 +3,7 @@
     sum_fmt: .asciz "%lld\n\0"
     gets_error_msg: .asciz "error reading arguments\n"
     atoi_error_msg: .asciz "error parsing arguments\n"
+    printf_error_msg: .asciz "error printing sum via printf\n"
     num1: .word 0
     num2: .word 0
     temp_buf: .space 11  # 10 digits + '\0'
@@ -95,20 +96,23 @@ main:
     call exit
 
     gets_error_exit:
-    la a0, gets_error_msg
-    call printf
-    # no matter if printf returned an error or not
+    li a0, 2
+    la a1, gets_error_msg
+    call fprintf
     li a0, 1
     call exit
 
     atoi_error_exit:
-    la a0, atoi_error_msg
-    call printf
-    # no matter if printf returned an error or not
+    li a0, 2
+    la a1, atoi_error_msg
+    call fprintf
     li a0, 1
     call exit
 
     printf_error_exit:
+    li a0, 2
+    la a1, printf_error_msg
+    call fprintf
     li a0, 1
     call exit
     
