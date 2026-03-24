@@ -18,6 +18,7 @@ uint64 sys_ps_listinfo(void)
     int processes_count = 0;
     struct procinfo kernel_local_procinfo;
 
+    acquire(&wait_lock);
     for (int i = 0; i < NPROC; ++i)
     {
         acquire(&proc[i].lock);
@@ -27,17 +28,15 @@ uint64 sys_ps_listinfo(void)
             if (plist!= 0 && processes_count > lim)
             {
                 release(&proc[i].lock);
+                release(&wait_lock);
                 return -1;
             }
             if (plist != 0)
             {
                 kernel_local_procinfo.pid = proc[i].pid;
-                // kernel_local_procinfo.name = proc[i].name;
                 safestrcpy(kernel_local_procinfo.name, proc[i].name, sizeof(proc[i].name));
                 kernel_local_procinfo.state = proc[i].state;
-                acquire(&wait_lock);
                 struct proc *parent = proc[i].parent;
-                release(&wait_lock);
                 release(&proc[i].lock);
                 if (parent == 0)
                 {
@@ -53,6 +52,7 @@ uint64 sys_ps_listinfo(void)
 
                 if (copyout(myproc()->pagetable, (uint64)plist + (processes_count - 1) * sizeof(struct procinfo), (char *)&kernel_local_procinfo, sizeof(struct procinfo)) == -1)
                 {
+                    release(&wait_lock);
                     return -2;
                 }
             }
@@ -67,5 +67,6 @@ uint64 sys_ps_listinfo(void)
         }
     }
 
+    release(&wait_lock);
     return processes_count;
 }
