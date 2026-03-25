@@ -503,3 +503,81 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_mutex(void) {
+  struct file *f;
+  int fd;
+
+  printf("Calling mutexalloc from sys_mutex\n");
+  if (mutexalloc(&f) < 0) {
+    return -1;
+  }
+
+  fd = -1;
+  if ((fd = fdalloc(f)) < 0) {
+    fileclose(f);
+    return -1;
+  }
+  return fd;
+}
+
+uint64
+sys_mutex_lock(void) {
+  int fd;
+  argint(0, &fd);
+  struct file *f = myproc()->ofile[fd];
+
+  if (f == 0) {
+    return -1;
+  }
+  
+  if(f->type != FD_MUTEX) {
+    return -1;
+  }
+  
+  // prevent self-deadlock
+  acquire(&f->sleeplock->lk);
+  if(f->sleeplock->locked && f->sleeplock->pid == myproc()->pid) {
+    release(&f->sleeplock->lk);
+    return -1;
+  }
+  release(&f->sleeplock->lk);
+
+  acquiresleep(f->sleeplock);
+
+  acquire(&f->sleeplock->lk);
+  f->sleeplock->locked = 1;
+  f->sleeplock->pid = myproc()->pid;
+  release(&f->sleeplock->lk);
+
+  return 0;
+}
+
+uint64
+sys_mutex_unlock(void) {
+  int fd;
+  argint(0, &fd);
+  struct file *f = myproc()->ofile[fd];
+
+  if (f == 0) {
+    return -1;
+  }
+  
+  if(f->type != FD_MUTEX) {
+    return -1;
+  }
+  
+  acquire(&f->sleeplock->lk);
+  if(f->sleeplock->locked && f->sleeplock->pid != myproc()->pid) {
+    release(&f->sleeplock->lk);
+    return -1;
+  }
+
+  f->sleeplock->locked = 0;
+  f->sleeplock->pid = -1;
+  release(&f->sleeplock->lk);
+
+  releasesleep(f->sleeplock);
+  return 0;
+}
