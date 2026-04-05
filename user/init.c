@@ -17,11 +17,16 @@ main(void)
   int pid, wpid;
 
   if(open("console", O_RDWR) < 0){
-    mknod("console", CONSOLE, 0);
+    mknod("console", major(CONSOLE), minor(CONSOLE));
     open("console", O_RDWR);
   }
   dup(0);  // stdout
   dup(0);  // stderr
+
+  mknod("null", major(NULL), minor(NULL));
+  mknod("zero", major(ZERO), minor(ZERO));
+  mknod("urandom", major(URANDOM), minor(URANDOM));
+  mknod("nullstat", major(NULLSTAT), minor(NULLSTAT));
 
   for(;;){
     printf("init: starting sh\n");
