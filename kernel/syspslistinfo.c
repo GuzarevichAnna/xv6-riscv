@@ -22,7 +22,7 @@ uint64 sys_ps_listinfo(void)
     for (int i = 0; i < NPROC; ++i)
     {
         acquire(&proc[i].lock);
-        if (proc[i].state == USED || proc[i].state == SLEEPING || proc[i].state == RUNNABLE || proc[i].state == RUNNING)
+        if (proc[i].state == SLEEPING || proc[i].state == RUNNABLE || proc[i].state == RUNNING || proc[i].state == ZOMBIE)
         {
             ++processes_count;
             if (plist!= 0 && processes_count > lim)
