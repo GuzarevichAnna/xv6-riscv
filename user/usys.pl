@@ -42,3 +42,6 @@ entry("getpid");
 entry("sbrk");
 entry("pause");
 entry("uptime");
+entry("listpages");
+entry("dropflags");
+entry("checkflags");
