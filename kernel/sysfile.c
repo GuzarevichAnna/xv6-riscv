@@ -503,3 +503,66 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_mutex(void) {
+  struct file *f;
+  int fd;
+
+  if (mutexalloc(&f) < 0) {
+    return -1;
+  }
+
+  fd = -1;
+  if ((fd = fdalloc(f)) < 0) {
+    fileclose(f);
+    return -1;
+  }
+  return fd;
+}
+
+uint64
+sys_mutex_lock(void) {
+  int fd;
+  argint(0, &fd);
+  struct file *f = myproc()->ofile[fd];
+
+  if (f == 0) {
+    return -1;
+  }
+  
+  if(f->type != FD_MUTEX) {
+    return -1;
+  }
+  
+  // prevent self-deadlock
+  if(holdingsleep(f->sleeplock)) {
+    return -1;
+  }
+
+  acquiresleep(f->sleeplock);
+
+  return 0;
+}
+
+uint64
+sys_mutex_unlock(void) {
+  int fd;
+  argint(0, &fd);
+  struct file *f = myproc()->ofile[fd];
+
+  if (f == 0) {
+    return -1;
+  }
+  
+  if(f->type != FD_MUTEX) {
+    return -1;
+  }
+  
+  if(!holdingsleep(f->sleeplock)) {
+    return -1;
+  }
+
+  releasesleep(f->sleeplock);
+  return 0;
+}

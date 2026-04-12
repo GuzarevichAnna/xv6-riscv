@@ -62,8 +62,14 @@ fileclose(struct file *f)
   struct file ff;
 
   acquire(&ftable.lock);
-  if(f->ref < 1)
+  if(f->ref < 1){
     panic("fileclose");
+  }
+  if (f->type == FD_MUTEX) {
+    if (holdingsleep(f->sleeplock)) {
+      releasesleep(f->sleeplock);
+    }
+  }
   if(--f->ref > 0){
     release(&ftable.lock);
     return;
@@ -75,6 +81,8 @@ fileclose(struct file *f)
 
   if(ff.type == FD_PIPE){
     pipeclose(ff.pipe, ff.writable);
+  } else if (ff.type == FD_MUTEX) {
+    mutexclose(ff.sleeplock);
   } else if(ff.type == FD_INODE || ff.type == FD_DEVICE){
     begin_op();
     iput(ff.ip);
