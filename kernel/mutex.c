@@ -17,8 +17,8 @@ mutexalloc(struct file **f)
         return -1;
     }
 
-    printf("Calling kalloc for sleeplock from mutexalloc\n");
     (*f)->sleeplock = (struct sleeplock*)kalloc();
+    printf("mutexalloc: executed kalloc for sleeplock (mem address = 0x%lx)\n", (uint64)((*f)->sleeplock));
     if ((*f)->sleeplock == 0) {
         fileclose(*f);
         return -1;
@@ -35,6 +35,6 @@ mutexalloc(struct file **f)
 
 void
 mutexclose(struct sleeplock *sleeplock) {
-    printf("Calling kfree for sleeplock from mutexclose\n");
+    printf("mutexclose: calling kfree for sleeplock (mem address = 0x%lx)\n", (uint64)sleeplock);
     kfree((char*)sleeplock);
 }

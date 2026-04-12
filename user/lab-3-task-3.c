@@ -108,6 +108,8 @@ void TestNotClosedMutex()
         exit(1);
     }
     // not unlocking, not closing
+
+    printf("TestNotClosedMutex passed!\n");
 }
 
 int main()

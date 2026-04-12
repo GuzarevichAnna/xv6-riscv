@@ -20,17 +20,16 @@ void itoa(int n, char *buffer)
     }
 }
 
-int main(int argc, char *argv[])
+void Test(int m)
 {
-    int m = mutex();
-    if (m < 0)
-    {
-        fprintf(2, "Error creating mutex\n");
-        exit(1);
-    }
     char m_str[8];
-    itoa(m, m_str);
 
+    if (m < 0) { // case without synchronization
+        m_str[0] = '\0';
+    } else { // case with synchronization
+        itoa(m, m_str);
+    }
+    
     int pid1 = fork();
     if (pid1 < 0)
     {
@@ -64,6 +63,21 @@ int main(int argc, char *argv[])
 
     wait(0);
     wait(0);
+}
+
+int main(int argc, char *argv[])
+{
+    Test(-1); // case without synchronization
+
+    printf("\n");
+
+    int m = mutex();
+    if (m < 0)
+    {
+        fprintf(2, "Error creating mutex\n");
+        exit(1);
+    }
+    Test(m); // case with synchronization
 
     exit(0);
 }

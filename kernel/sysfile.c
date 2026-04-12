@@ -509,7 +509,6 @@ sys_mutex(void) {
   struct file *f;
   int fd;
 
-  printf("Calling mutexalloc from sys_mutex\n");
   if (mutexalloc(&f) < 0) {
     return -1;
   }
@@ -537,19 +536,11 @@ sys_mutex_lock(void) {
   }
   
   // prevent self-deadlock
-  acquire(&f->sleeplock->lk);
-  if(f->sleeplock->locked && f->sleeplock->pid == myproc()->pid) {
-    release(&f->sleeplock->lk);
+  if(holdingsleep(f->sleeplock)) {
     return -1;
   }
-  release(&f->sleeplock->lk);
 
   acquiresleep(f->sleeplock);
-
-  acquire(&f->sleeplock->lk);
-  f->sleeplock->locked = 1;
-  f->sleeplock->pid = myproc()->pid;
-  release(&f->sleeplock->lk);
 
   return 0;
 }
@@ -568,15 +559,9 @@ sys_mutex_unlock(void) {
     return -1;
   }
   
-  acquire(&f->sleeplock->lk);
-  if(f->sleeplock->locked && f->sleeplock->pid != myproc()->pid) {
-    release(&f->sleeplock->lk);
+  if(!holdingsleep(f->sleeplock)) {
     return -1;
   }
-
-  f->sleeplock->locked = 0;
-  f->sleeplock->pid = -1;
-  release(&f->sleeplock->lk);
 
   releasesleep(f->sleeplock);
   return 0;
