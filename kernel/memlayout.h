@@ -8,6 +8,7 @@
 // 0C000000 -- PLIC
 // 10000000 -- uart0 
 // 10001000 -- virtio disk 
+// 101000   -- rtc
 // 80000000 -- qemu's boot ROM loads the kernel here,
 //             then jumps here.
 // unused RAM after 80000000.
@@ -24,6 +25,11 @@
 // virtio mmio interface
 #define VIRTIO0 0x10001000
 #define VIRTIO0_IRQ 1
+
+// rtc registers
+#define RTC 0x101000
+#define RTC_LOW RTC
+#define RTC_HIGH RTC + sizeof(uint32)
 
 // qemu puts platform-level interrupt controller (PLIC) here.
 #define PLIC 0x0c000000L

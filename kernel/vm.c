@@ -35,6 +35,9 @@ kvmmake(void)
   // PLIC
   kvmmap(kpgtbl, PLIC, PLIC, 0x4000000, PTE_R | PTE_W);
 
+  // RTC
+  kvmmap(kpgtbl, RTC, RTC, PGSIZE, PTE_R | PTE_W);
+
   // map kernel text executable and read-only.
   kvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X);
 
