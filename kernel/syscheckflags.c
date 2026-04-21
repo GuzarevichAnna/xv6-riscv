@@ -14,13 +14,13 @@ uint64 sys_checkflags(void)
 {
     uint64 va;
     int len;
-    int flags_to_drop;
+    int flags_to_check;
 
     argaddr(0, &va);
     argint(1, &len);
-    argint(2, &flags_to_drop);
+    argint(2, &flags_to_check);
 
-    if (flags_to_drop & ~(PTE_A | PTE_D)) {
+    if (flags_to_check & ~(PTE_A | PTE_D)) {
         return -1;
     }
 
@@ -44,12 +44,12 @@ uint64 sys_checkflags(void)
             return -2;
         }
 
-        if (flags_to_drop & PTE_A) {
+        if (flags_to_check & PTE_A) {
             if (*pte & PTE_A) {
                 flag_set = 1;
             }
         }
-        if (flags_to_drop & PTE_D) {
+        if (flags_to_check & PTE_D) {
             if (*pte & PTE_D) {
                 flag_set = 1;
             }

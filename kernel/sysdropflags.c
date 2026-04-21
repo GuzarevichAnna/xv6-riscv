@@ -25,9 +25,12 @@ uint64 sys_dropflags(void)
         return -1;
     }
 
-    while (len > 0)
+    // check that all pages exist, are valid and are accessible by user
+    int len_copy = len;
+    uint64 va_copy = va;
+    while (len_copy > 0)
     {
-        uint64 page_va = PGROUNDDOWN(va);
+        uint64 page_va = PGROUNDDOWN(va_copy);
 
         pte_t *pte = walk(myproc()->pagetable, page_va, 0);
         if (pte == 0)
@@ -42,6 +45,17 @@ uint64 sys_dropflags(void)
         {
             return -2;
         }
+
+        len_copy -= PGSIZE - (va_copy - page_va);
+        va_copy = page_va + PGSIZE;
+    }
+
+    // drop the flags
+    while (len > 0)
+    {
+        uint64 page_va = PGROUNDDOWN(va);
+
+        pte_t *pte = walk(myproc()->pagetable, page_va, 0);
 
         if (flags_to_drop & PTE_A)
         {

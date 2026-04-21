@@ -8,10 +8,8 @@
 int global_var;
 char *heap_buf;
 
-void check_flags(uint64 addr, int len, int expected_flags, int allow_bad_address, int allow_any_flags)
-{
-    printf("Checking flags A and D: ");
-    int flag_set = checkflags(addr, len, PTE_A | PTE_D);
+void check_one_flag(int flag_to_check, uint64 addr, int len, int expected_flags, int allow_bad_address, int allow_any_flags) {
+    int flag_set = checkflags(addr, len, flag_to_check);
     switch (flag_set)
     {
     case -1:
@@ -30,26 +28,37 @@ void check_flags(uint64 addr, int len, int expected_flags, int allow_bad_address
         }
     default:
         printf("%d\n", flag_set);
-        if(expected_flags != flag_set && !allow_any_flags) {
+        if (!allow_any_flags && (((expected_flags & flag_to_check) && !flag_set) || (!(expected_flags & flag_to_check) && flag_set)))
+        {
             printf("Flags are incorrect\n");
-            exit (1);
-        };
+            exit(1);
+        }
     }
+
 }
 
-void TestVariableStack() {
+void check_flags(uint64 addr, int len, int expected_flags, int allow_bad_address, int allow_any_flags)
+{
+    printf("Checking flag A: ");
+    check_one_flag(PTE_A, addr, len, expected_flags, allow_bad_address, allow_any_flags);
+    printf("Checking flag D: ");
+    check_one_flag(PTE_D, addr, len, expected_flags, allow_bad_address, allow_any_flags);
+}
+
+void TestVariableStack()
+{
     printf("\n\nTestVariableStack started...\n");
 
     volatile int var;
 
     printf("Initial state:\n");
     listpages();
-    check_flags((uint64)&var, sizeof(var), 0, 0, 1);    // flags on this page may be already set if some other variables on it were accessed/written
+    check_flags((uint64)&var, sizeof(var), 0, 0, 1); // flags on this page may be already set if some other variables on it were accessed/written
 
     var = 1;
     printf("\n\nAfter writing to stack variable:\n");
     listpages();
-    check_flags((uint64)&var, sizeof(var), 1, 0, 0);
+    check_flags((uint64)&var, sizeof(var), PTE_A | PTE_D, 0, 0);
 
     switch (dropflags((uint64)&var, sizeof(var), PTE_A | PTE_D))
     {
@@ -62,17 +71,18 @@ void TestVariableStack() {
     }
     printf("\n\nAfter dropping A and D:\n");
     listpages();
-    check_flags((uint64)&var, sizeof(var), 0, 0, 1);    // flags on this page may still be set if some other variables on it were accessed/written
+    check_flags((uint64)&var, sizeof(var), 0, 0, 1); // flags on this page may still be set if some other variables on it were accessed/written
 
     [[maybe_unused]] volatile int var_copy = var;
     printf("\n\nAfter reading:\n");
     listpages();
-    check_flags((uint64)&var, sizeof(var), 1, 0, 0);
+    check_flags((uint64)&var, sizeof(var), PTE_A, 0, 1); // flag D may be set if some other variables on stack were written
 
     printf("TestVariableStack succeeded\n");
 }
 
-void TestVariableGlobal() {
+void TestVariableGlobal()
+{
     printf("\n\nTestVariableGlobal started...\n");
 
     printf("Initial state:\n");
@@ -82,7 +92,7 @@ void TestVariableGlobal() {
     global_var = 1;
     printf("\n\nAfter writing to global variable:\n");
     listpages();
-    check_flags((uint64)&global_var, sizeof(global_var), 1, 0, 0);
+    check_flags((uint64)&global_var, sizeof(global_var), PTE_A | PTE_D, 0, 0);
 
     switch (dropflags((uint64)&global_var, sizeof(global_var), PTE_A | PTE_D))
     {
@@ -99,7 +109,7 @@ void TestVariableGlobal() {
     [[maybe_unused]] volatile int var_copy = global_var;
     printf("\n\nAfter reading:\n");
     listpages();
-    check_flags((uint64)&global_var, sizeof(global_var), 1, 0, 0);
+    check_flags((uint64)&global_var, sizeof(global_var), PTE_A, 0, 0);
 
     printf("TestVariableGlobal succeeded\n");
 }
@@ -109,16 +119,16 @@ void TestArrayStack()
     printf("\n\nTestArrayStack started...\n");
 
     int stack_buf_size = 512;
-    char stack_buf [stack_buf_size];
+    char stack_buf[stack_buf_size];
 
     printf("Initial state:\n");
     listpages();
-    check_flags((uint64)stack_buf, stack_buf_size, 0, 0, 1);    // flags on this page may be already set if some other variables on it were accessed/written
+    check_flags((uint64)stack_buf, stack_buf_size, 0, 0, 1); // flags on this page may be already set if some other variables on it were accessed/written
 
     memset(stack_buf, 1, stack_buf_size);
     printf("\n\nAfter writing to stack memory:\n");
     listpages();
-    check_flags((uint64)stack_buf, stack_buf_size, 1, 0, 0);
+    check_flags((uint64)stack_buf, stack_buf_size, PTE_A | PTE_D, 0, 0);
 
     switch (dropflags((uint64)stack_buf, stack_buf_size, PTE_A | PTE_D))
     {
@@ -131,15 +141,16 @@ void TestArrayStack()
     }
     printf("\n\nAfter dropping A and D:\n");
     listpages();
-    check_flags((uint64)stack_buf, stack_buf_size, 0, 0, 1);   // flags on this page may still be set if some other variables on it were accessed/written
+    check_flags((uint64)stack_buf, stack_buf_size, 0, 0, 1); // flags on this page may still be set if some other variables on it were accessed/written
 
     [[maybe_unused]] volatile char temp;
-    for (int i = 0; i < stack_buf_size; ++i) {
+    for (int i = 0; i < stack_buf_size; ++i)
+    {
         temp = stack_buf[i];
     }
     printf("\n\nAfter reading:\n");
     listpages();
-    check_flags((uint64)stack_buf, stack_buf_size, 1, 0, 0);
+    check_flags((uint64)stack_buf, stack_buf_size, PTE_A, 0, 1); // flag D may be set if some other variables on stack were written
 
     printf("TestArrayStack succeeded\n");
 }
@@ -162,7 +173,7 @@ void TestArrayHeap()
     memset(heap_buf, 1, alloc_size);
     printf("\n\nAfter writing to allocated memory:\n");
     listpages();
-    check_flags((uint64)heap_buf, alloc_size, 1, 0, 0);
+    check_flags((uint64)heap_buf, alloc_size, PTE_A | PTE_D, 0, 0);
 
     switch (dropflags((uint64)heap_buf, alloc_size, PTE_A | PTE_D))
     {
@@ -178,17 +189,18 @@ void TestArrayHeap()
     check_flags((uint64)heap_buf, alloc_size, 0, 0, 0);
 
     [[maybe_unused]] volatile char temp;
-    for (int i = 0; i < alloc_size; ++i) {
+    for (int i = 0; i < alloc_size; ++i)
+    {
         temp = heap_buf[i];
     }
     printf("\n\nAfter reading:\n");
     listpages();
-    check_flags((uint64)heap_buf, alloc_size, 1, 0, 0);
+    check_flags((uint64)heap_buf, alloc_size, PTE_A, 0, 0);
 
     free(heap_buf);
     printf("\n\nAfter freeing memory:\n");
     listpages();
-    check_flags((uint64)heap_buf, alloc_size, 0, 0, 1);     // free may not clear flags
+    check_flags((uint64)heap_buf, alloc_size, 0, 0, 1); // free may not clear flags
 
     printf("TestArrayHeap succeeded\n");
 }
