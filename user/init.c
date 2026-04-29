@@ -23,10 +23,19 @@ main(void)
   dup(0);  // stdout
   dup(0);  // stderr
 
-  mknod("null", major(NULL), minor(NULL));
-  mknod("zero", major(ZERO), minor(ZERO));
-  mknod("urandom", major(URANDOM), minor(URANDOM));
-  mknod("nullstat", major(NULLSTAT), minor(NULLSTAT));
+  struct stat st;
+  if (stat("null", &st) < 0) {
+    mknod("null", major(NULL), minor(NULL));
+  }
+  if (stat("zero", &st) < 0) {
+    mknod("zero", major(ZERO), minor(ZERO));
+  }
+  if (stat("urandom", &st) < 0) {
+    mknod("urandom", major(URANDOM), minor(URANDOM));
+  }
+  if (stat("nullstat", &st) < 0) {
+    mknod("nullstat", major(NULLSTAT), minor(NULLSTAT));
+  }
 
   for(;;){
     printf("init: starting sh\n");

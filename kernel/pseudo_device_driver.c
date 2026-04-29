@@ -1,5 +1,3 @@
-#include <stdarg.h>
-
 #include "types.h"
 #include "param.h"
 #include "spinlock.h"
@@ -12,16 +10,10 @@
 #include "proc.h"
 #include "fcntl.h"
 
-#define C(x) ((x) - '@') // Control-x
-
-struct zero
-{
-    struct spinlock lock;
-
-    // buffer to get zeroes from
 #define BUF_SIZE 128
-    char buf[BUF_SIZE];
-} zero;
+
+// buffer to get zeroes from
+static char zero_buf[BUF_SIZE] = {0};
 
 struct urandom
 {
@@ -52,29 +44,20 @@ int pseudoread(short minor, int user_dst, uint64 dst, int n)
     {
     case minor(NULL):
     {
-        char cbuf = C('D');
-
-        if (either_copyout(user_dst, dst, &cbuf, 1) == -1)
-        {
-            return -1;
-        }
-
         return 0;
     }
     case minor(ZERO):
     {
         int bytes_written_count = 0;
-        acquire(&zero.lock);
         while (bytes_written_count < n)
         {
             int bytes_writing_now_count = n - bytes_written_count >= BUF_SIZE ? BUF_SIZE : n - bytes_written_count;
-            if (either_copyout(user_dst, dst + bytes_written_count, zero.buf, bytes_writing_now_count) == -1)
+            if (either_copyout(user_dst, dst + bytes_written_count, zero_buf, bytes_writing_now_count) == -1)
             {
                 break;
             }
             bytes_written_count += bytes_writing_now_count;
         }
-        release(&zero.lock);
         return bytes_written_count;
     }
     case minor(URANDOM):
@@ -161,9 +144,6 @@ int pseudowrite(short minor, int user_src, uint64 src, int n)
 
 void pseudoinit(void)
 {
-    initlock(&zero.lock, "zero");
-    memset(zero.buf, 0, BUF_SIZE);
-
     initlock(&urandom.lock, "urandom");
     urandom.seed = 1;
     urandom.a = 9;

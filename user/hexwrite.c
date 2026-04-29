@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     if ((fd = open(argv[2], O_WRONLY)) < 0)
     {
-        fprintf(2, "hexdump: cannot open %s\n", argv[2]);
+        fprintf(2, "hexwrite: cannot open %s\n", argv[2]);
         exit(1);
     }
 
@@ -49,13 +49,13 @@ int main(int argc, char *argv[])
 
     if (write(fd, buf, bytes_to_write) != bytes_to_write)
     {
-        fprintf(2, "hexdump: write error\n");
+        fprintf(2, "hexwrite: write error\n");
         exit(1);
     }
 
     if (close(fd) < 0)
     {
-        fprintf(2, "hexdump: close error\n");
+        fprintf(2, "hexwrite: close error\n");
         exit(1);
     }
 
