@@ -58,7 +58,7 @@ struct {
 // uses sleep() and UART interrupts.
 //
 int
-consolewrite(int user_src, uint64 src, int n)
+consolewrite(short minor, int user_src, uint64 src, int n)
 {
   char buf[32]; // move batches from user space to uart.
   int i = 0;
@@ -83,7 +83,7 @@ consolewrite(int user_src, uint64 src, int n)
 // or kernel address.
 //
 int
-consoleread(int user_dst, uint64 dst, int n)
+consoleread(short minor, int user_dst, uint64 dst, int n)
 {
   uint target;
   int c;
@@ -193,6 +193,6 @@ consoleinit(void)
 
   // connect read and write system calls
   // to consoleread and consolewrite.
-  devsw[CONSOLE].read = consoleread;
-  devsw[CONSOLE].write = consolewrite;
+  devsw[major(CONSOLE)].read = consoleread;
+  devsw[major(CONSOLE)].write = consolewrite;
 }
