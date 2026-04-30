@@ -9,13 +9,15 @@
 #define Read_RTC_LOW (*((volatile uint32*)(RTC_LOW)))
 #define Read_RTC_HIGH (*((volatile uint32*)(RTC_HIGH)))
 
-uint64 get_time() {
-    uint64 rtc = Read_RTC_LOW;
-    rtc |= ((uint64)Read_RTC_HIGH << 32);
+int64 get_time() {
+    intr_off();
+    int64 rtc = Read_RTC_LOW;
+    rtc |= ((int64)Read_RTC_HIGH << 32);
+    intr_on();
     return rtc;
 }
 
-uint64 sys_get_time(void) {
-    uint64 time = get_time();
+int64 sys_get_time(void) {
+    int64 time = get_time();
     return time;
 }

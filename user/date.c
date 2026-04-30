@@ -25,35 +25,70 @@ static int days_in_year(int year)
 
 int main(void)
 {
-    uint64 unix_time = get_time();
+    int64 unix_time = get_time();
 
-    uint64 year, month, day, hour, minute, second, nanosecond;
+    int64 year, month, day, hour, minute, second, nanosecond;
+    int64 epoch_day, sec_of_day, nsec;
 
-    uint64 total_seconds = unix_time / NS_PER_SEC;
-    nanosecond = unix_time % NS_PER_SEC;
-
-    uint64 days_since_epoch = total_seconds / SEC_PER_DAY;
-    long long remaining_seconds = total_seconds % SEC_PER_DAY;
-
-    hour = remaining_seconds / 3600;
-    minute = (remaining_seconds % 3600) / 60;
-    second = remaining_seconds % 60;
-
-    year = 1970;
-    while (days_since_epoch >= days_in_year(year))
-    {
-        days_since_epoch -= days_in_year(year);
-        ++year;
+    if (unix_time >= 0) {
+        epoch_day = unix_time / (NS_PER_SEC * SEC_PER_DAY);
+        int64 rem_ns = unix_time % (NS_PER_SEC * SEC_PER_DAY);
+        sec_of_day = rem_ns / NS_PER_SEC;
+        nsec = rem_ns % NS_PER_SEC;
+    } else {
+        int64 abs_ts = -unix_time;
+        epoch_day = -(abs_ts / (NS_PER_SEC * SEC_PER_DAY));
+        int64 rem_ns = abs_ts % (NS_PER_SEC * SEC_PER_DAY);
+        if (rem_ns != 0) {
+            epoch_day--;
+            rem_ns = (NS_PER_SEC * SEC_PER_DAY) - rem_ns;
+        }
+        sec_of_day = rem_ns / NS_PER_SEC;
+        nsec = rem_ns % NS_PER_SEC;
     }
+    hour = sec_of_day / 3600;
+    minute = (sec_of_day % 3600) / 60;
+    second = sec_of_day % 60;
+    nanosecond = nsec;
 
-    month = 0;
-    while (days_since_epoch >= days_in_month(month, year))
-    {
-        days_since_epoch -= days_in_month(month, year);
-        ++month;
+    if (epoch_day >= 0) {
+        uint64 days = (uint64) epoch_day;
+        year = 1970;
+        while (days >= days_in_year(year)) {
+            days -= days_in_year(year);
+            year++;
+        }
+        month = 0;
+        while (days >= days_in_month(month, year)) {
+            days -= days_in_month(month, year);
+            month++;
+        }
+        month++; // month are numbered starting with 1 (January)
+        day = days + 1;
+    } else {
+        int64 days_before = -epoch_day;
+        year = 1969;
+        while (days_before > days_in_year((int)year)) {
+            days_before -= days_in_year((int)year);
+            year--;
+        }
+        month = 12;
+        day = 31;
+        int64 rem = days_before - 1;
+        while (rem > 0) {
+            if (day > 1) {
+                day--;
+            } else {
+                month--;
+                if (month == 0) {
+                    month = 12;
+                    year--;
+                }
+                day = days_in_month((int)month - 1, (int)year);
+            }
+            rem--;
+        }
     }
-    ++month; // month are numbered starting with 1 (January)
-    day = days_since_epoch + 1;
 
     printf("%ld-%ld-%ld %ld:%ld:%ld.%ld\n", year, month, day, hour, minute, second, nanosecond);
 
