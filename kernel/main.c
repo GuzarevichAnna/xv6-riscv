@@ -11,6 +11,9 @@ void
 main()
 {
   if(cpuid() == 0){
+    ring_buffer_init();
+    pr_msg_init();
+    protocol_init();
     consoleinit();
     printfinit();
     printf("\n");
