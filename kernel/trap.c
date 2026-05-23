@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "protocol.h"
 
 struct spinlock tickslock;
 uint ticks;
@@ -167,6 +168,7 @@ clockintr()
   if(cpuid() == 0){
     acquire(&tickslock);
     ticks++;
+    protocol_timeout_check();
     wakeup(&ticks);
     release(&tickslock);
   }
@@ -194,8 +196,19 @@ devintr()
     int irq = plic_claim();
 
     if(irq == UART0_IRQ){
+      if (cur_protocol_flags & PROTOCOL_INTERRUPTS) {
+        volatile uint8 *uart = (uint8*)UART0;
+        uint8 iir = uart[2];
+        uint8 lsr = uart[5];
+        pr_msg("interrupt number %d from UART; state registers: IIR=%x LSR=%x", irq, iir, lsr);
+      }
       uartintr();
     } else if(irq == VIRTIO0_IRQ){
+      if (cur_protocol_flags & PROTOCOL_INTERRUPTS) {
+        volatile uint32 *vstatus = (uint32*)(VIRTIO0 + 0x60);
+        uint32 isr = *vstatus;
+        pr_msg("interrupt number %d from VIRTIO; state register: ISR=%x", irq, isr);
+      }
       virtio_disk_intr();
     } else if(irq){
       printf("unexpected interrupt irq=%d\n", irq);

@@ -77,6 +77,10 @@ int             printf(char*, ...) __attribute__ ((format (printf, 1, 2)));
 void            panic(char*) __attribute__((noreturn));
 void            printfinit(void);
 
+// pr_msg.c    
+int             pr_msg(const char*, ...) __attribute__ ((format (printf, 1, 2)));
+void            pr_msg_init(void);
+
 // proc.c
 int             cpuid(void);
 void            kexit(int);
@@ -180,6 +184,14 @@ void            plic_complete(int);
 void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
+
+// ring_buffer.h
+void            ring_buffer_init(void);
+void            ring_buffer_write_byte(char);
+
+// protocol.h
+void            protocol_timeout_check(void);
+void            protocol_init(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

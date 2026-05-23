@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 #include "elf.h"
+#include "syscall.h"
+#include "protocol.h"
 
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
@@ -34,6 +36,10 @@ kexec(char *path, char **argv)
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
+
+  // save the path before it became unavailable due to address space change
+  char saved_path[128];
+  safestrcpy(saved_path, path, sizeof(saved_path));
 
   begin_op();
 
@@ -134,6 +140,14 @@ kexec(char *path, char **argv)
   p->trapframe->epc = elf.entry;  // initial program counter = ulib.c:start()
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
+
+  if (cur_protocol_flags & PROTOCOL_EXEC) {
+    int ppid;
+    acquire(&p->lock);
+    ppid = p->pid;
+    release(&p->lock);
+    pr_msg("exec: %s, pid=%d", saved_path, ppid);
+  }
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
