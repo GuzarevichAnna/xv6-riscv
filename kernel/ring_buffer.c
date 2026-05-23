@@ -16,7 +16,8 @@ void ring_buffer_write_byte(char byte)
     if ((buf.tail + 1) % RING_BUFFER_SIZE == buf.head)
     {
         // buffer is full - move both head and tail
-        buf.head = buf.tail = (buf.tail + 1) % RING_BUFFER_SIZE;
+        buf.head = (buf.head + 1) % RING_BUFFER_SIZE;
+        buf.tail = (buf.tail + 1) % RING_BUFFER_SIZE;
     }
     else
     {

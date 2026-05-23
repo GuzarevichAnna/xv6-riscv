@@ -6,41 +6,41 @@
 #include "proc.h"
 #include "ring_buffer.h"
 
-#define MAX_DMESG_OUTPUT 2048 // this syscall copies only part of ring_buffer to user (up to MAX_DMESG_OUTPUT-1 bytes)
-
 // copy first to tmp_buf in kernel-space, then copyout from tmp_buf to user-space, because copyout can't be used when buf.lock is acquired
 uint64 sys_dmesg(void)
 {
     uint64 user_dst;
     argaddr(0, &user_dst);
 
-    char tmp_buf[MAX_DMESG_OUTPUT];
+    char* tmp_buf = kalloc(); // tmp_buf has size RING_BUFFER_SIZE
     int copied_len = 0;
 
     acquire(&buf.lock);
 
+    int head = buf.head; // use copy of buf.head so that the original buf.head is not moved
+
     // skip till the first '\n'
-    while (buf.head != buf.tail && buf.data[buf.head] != '\n')
+    while (head != buf.tail && buf.data[head] != '\n')
     {
-        buf.head = (buf.head + 1) % RING_BUFFER_SIZE;
+        head = (head + 1) % RING_BUFFER_SIZE;
     }
-    if (buf.head == buf.tail)
+    if (head == buf.tail)
     {
         tmp_buf[0] = '\0';
         goto pass_to_user;
     }
-    buf.head = (buf.head + 1) % RING_BUFFER_SIZE; // skip '\n'
-    if (buf.head == buf.tail)
+    head = (head + 1) % RING_BUFFER_SIZE; // skip '\n'
+    if (head == buf.tail)
     {
         tmp_buf[0] = '\0';
         goto pass_to_user;
     }
 
-    while (buf.head != buf.tail && copied_len < MAX_DMESG_OUTPUT - 1) // -1 is for '\0'
+    while (head != buf.tail && copied_len < RING_BUFFER_SIZE - 1) // -1 is for '\0'
     {
-        tmp_buf[copied_len] = buf.data[buf.head];
+        tmp_buf[copied_len] = buf.data[head];
         ++copied_len;
-        buf.head = (buf.head + 1) % RING_BUFFER_SIZE;
+        head = (head + 1) % RING_BUFFER_SIZE;
     }
 
     // exclude everything after the last '\n'
